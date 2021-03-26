@@ -1,14 +1,39 @@
 <?php
     // Core App Class
 
-    echo 'core0';
     class Core {
         protected $currentController = 'Pages';
         protected $currentMethod = 'index';
         protected $params = [];
 
         public function __construct() {
-            print_r($this->getUrl());
+            $url = $this->getUrl();
+
+            // Look in controllers folder if first value in url exist as controller function. ucwords capitalize first letter
+            if (file_exists('../app/controllers/' . ucwords($url[0]) . '.php')) {
+                // set a new controller
+                $this->currentController = ucwords($url[0]);
+                unset($url[0]);
+            }
+
+            // Require the controller
+            require_once '../app/controllers/' . $this->currentController . '.php';
+            $this->currentController = new $this->currentController;
+
+            // Check for second part of the URL
+            if (isset($url[1])) {
+                if (method_exists($this->currentController, $url[1])) {
+                    $this->currentMethod = $url[1];
+                    unset($url[1]);
+                }
+            }
+
+            // Get parameters
+            $this->params = $url ? array_values($url) : [];
+
+            // Call a callback with array of params
+            call_user_func_array([$this->currentController,  $this->currentMethod], $this->params);
+
         }
 
         public function getUrl() {
